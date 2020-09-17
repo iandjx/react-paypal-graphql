@@ -25,42 +25,39 @@ const CAPTURE_TRANSACTION = gql`
     }
   }
 `;
+const p = window.paypal;
 
 function App() {
   const payPalRef = React.useRef();
-  const [orderID, setOrderID] = React.useState();
   const [createOrder] = useMutation(CREATE_ORDER);
-  const [captureTransaction, { data: capturedTransaction }] = useMutation(
-    CAPTURE_TRANSACTION
-  );
-
-  const p = window.paypal;
-  const test = p.Buttons().render("body");
-  // p.Buttons().render("#paypal-button-container"); // This function
+  const [
+    captureTransaction,
+    { loading, data: capturedTransaction },
+  ] = useMutation(CAPTURE_TRANSACTION);
 
   useEffect(() => {
     p.Buttons({
       createOrder: async () => {
         const { data } = await createOrder();
-        console.log(data.createOrder);
-        // await setOrderID(data.createOrder.orderID);
-        let orderID = data.createOrder.orderID;
-        console.log(orderID);
-        return orderID;
+
+        return data.createOrder.orderID;
       },
       onApprove: async (data) => {
-        const { data: capturedData } = await captureTransaction({
+        await captureTransaction({
           variables: {
             orderID: data.orderID,
           },
         });
-        if (capturedData) {
-          console.log(capturedData);
-        }
-        return capturedTransaction;
       },
     }).render(payPalRef.current);
   }, []);
+
+  if (loading) {
+    return <div>loading...</div>;
+  }
+  if (capturedTransaction) {
+    return <div>{JSON.stringify(capturedTransaction)}</div>;
+  }
 
   return (
     <div className="App">
